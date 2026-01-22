@@ -11,6 +11,9 @@
 #include <linux/types.h>
 #include <linux/version.h>
 #include <linux/compiler_types.h>
+#include <linux/sched.h>        // 包含 task_struct 定义
+#include <linux/sched/task.h>   // 包含 put_task_struct 函数声明
+#include <linux/task_work.h>    // 包含 TWA_RESUME 和 task_work_add 声明
 
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
