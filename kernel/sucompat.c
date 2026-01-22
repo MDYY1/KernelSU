@@ -25,6 +25,18 @@
 
 bool ksu_su_compat_enabled __read_mostly = true;
 
+// 老内核没有 strncpy_from_user_nofault，提供替代实现
+static long strncpy_from_user_nofault(char *dst, const char __user *src, long count)
+{
+    long res;
+    
+    pagefault_disable();
+    res = strncpy_from_user(dst, src, count);
+    pagefault_enable();
+    
+    return res;
+}
+
 static int su_compat_feature_get(u64 *value)
 {
     *value = ksu_su_compat_enabled ? 1 : 0;
