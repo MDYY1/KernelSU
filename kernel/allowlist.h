@@ -10,6 +10,7 @@
 #define LAST_APPLICATION_UID 19999
 #define FIRST_ISOLATED_UID 99000
 #define LAST_ISOLATED_UID 99999
+#define TWA_RESUME 1
 
 void ksu_allowlist_init(void);
 
