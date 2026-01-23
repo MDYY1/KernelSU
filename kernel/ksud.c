@@ -14,6 +14,7 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
+#include <linux/mm.h>
 #include <linux/namei.h>
 #include <linux/workqueue.h>
 #include <linux/uio.h>
@@ -29,6 +30,36 @@
 
 bool ksu_module_mounted __read_mostly = false;
 bool ksu_boot_completed __read_mostly = false;
+
+static inline unsigned long copy_from_user_nofault(void *dst, const void __user *src, unsigned long size)
+{
+    unsigned long ret;
+    
+    if (!src || !dst || size == 0)
+        return -EFAULT;
+    
+    // 使用 pagefault_disable 防止页错误
+    pagefault_disable();
+    ret = copy_from_user(dst, src, size);
+    pagefault_enable();
+    
+    return ret;
+}
+
+static inline unsigned long copy_to_user_nofault(void __user *dst, const void *src, unsigned long size)
+{
+    unsigned long ret;
+    
+    if (!dst || !src || size == 0)
+        return -EFAULT;
+    
+    // 使用 pagefault_disable 防止页错误
+    pagefault_disable();
+    ret = copy_to_user(dst, src, size);
+    pagefault_enable();
+    
+    return ret;
+}
 
 static const char KERNEL_SU_RC[] =
     "\n"
