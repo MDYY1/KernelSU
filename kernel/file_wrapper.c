@@ -106,7 +106,7 @@ static int ksu_wrapper_iopoll(struct kiocb *kiocb, bool spin)
     struct ksu_file_wrapper *data = kiocb->ki_filp->private_data;
     struct file *orig = data->orig;
     kiocb->ki_filp = orig;
-    return orig->f_op->iopoll(kiocb, spin);
+    return 0;
 }
 #endif
 
@@ -336,16 +336,14 @@ static loff_t ksu_wrapper_remap_file_range(struct file *file_in, loff_t pos_in,
                                            loff_t pos_out, loff_t len,
                                            unsigned int remap_flags)
 {
-    if (remap_flags & REMAP_FILE_DEDUP) {
+    if (0) {
         struct ksu_file_wrapper *data = file_out->private_data;
         struct file *orig = data->orig;
-        return orig->f_op->remap_file_range(file_in, pos_in, orig, pos_out, len,
-                                            remap_flags);
+        return 0;
     } else {
         struct ksu_file_wrapper *data = file_in->private_data;
         struct file *orig = data->orig;
-        return orig->f_op->remap_file_range(orig, pos_in, file_out, pos_out,
-                                            len, remap_flags);
+        return 0;
     }
 }
 
@@ -354,9 +352,6 @@ static int ksu_wrapper_fadvise(struct file *fp, loff_t off1, loff_t off2,
 {
     struct ksu_file_wrapper *data = fp->private_data;
     struct file *orig = data->orig;
-    if (orig->f_op->fadvise) {
-        return orig->f_op->fadvise(orig, off1, off2, flags);
-    }
     return -EINVAL;
 }
 
@@ -390,7 +385,6 @@ static struct ksu_file_wrapper *ksu_create_file_wrapper(struct file *fp)
     p->ops.write = fp->f_op->write ? ksu_wrapper_write : NULL;
     p->ops.read_iter = fp->f_op->read_iter ? ksu_wrapper_read_iter : NULL;
     p->ops.write_iter = fp->f_op->write_iter ? ksu_wrapper_write_iter : NULL;
-    p->ops.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
     p->ops.iterate = fp->f_op->iterate ? ksu_wrapper_iterate : NULL;
 #endif
@@ -402,11 +396,6 @@ static struct ksu_file_wrapper *ksu_create_file_wrapper(struct file *fp)
     p->ops.compat_ioctl =
         fp->f_op->compat_ioctl ? ksu_wrapper_compat_ioctl : NULL;
     p->ops.mmap = fp->f_op->mmap ? ksu_wrapper_mmap : NULL;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
-    p->ops.fop_flags = fp->f_op->fop_flags;
-#else
-    p->ops.mmap_supported_flags = fp->f_op->mmap_supported_flags;
-#endif
     p->ops.flush = fp->f_op->flush ? ksu_wrapper_flush : NULL;
     p->ops.release = ksu_wrapper_release;
     p->ops.fsync = fp->f_op->fsync ? ksu_wrapper_fsync : NULL;
@@ -427,9 +416,6 @@ static struct ksu_file_wrapper *ksu_create_file_wrapper(struct file *fp)
     p->ops.show_fdinfo = fp->f_op->show_fdinfo ? ksu_wrapper_show_fdinfo : NULL;
     p->ops.copy_file_range =
         fp->f_op->copy_file_range ? ksu_wrapper_copy_file_range : NULL;
-    p->ops.remap_file_range =
-        fp->f_op->remap_file_range ? ksu_wrapper_remap_file_range : NULL;
-    p->ops.fadvise = fp->f_op->fadvise ? ksu_wrapper_fadvise : NULL;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
     p->ops.splice_eof = fp->f_op->splice_eof ? ksu_wrapper_splice_eof : NULL;
