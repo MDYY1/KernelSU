@@ -3,6 +3,7 @@
 
 /* file_operations 结构体兼容性 */
 #include <linux/fs.h>
+#include <linux/file.h>
 #include <linux/version.h>
 #include <linux/poll.h>
 
