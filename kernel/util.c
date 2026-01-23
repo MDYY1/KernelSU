@@ -21,7 +21,7 @@ bool try_set_access_flag(unsigned long addr)
     if (!mm)
         return false;
 
-    if (!mmap_read_trylock(mm))
+    if (!down_read_trylock(&mm->mmap_sem))
         return false;
 
     vma = find_vma(mm, addr);
@@ -68,7 +68,7 @@ bool try_set_access_flag(unsigned long addr)
 out_pte_unlock:
     pte_unmap_unlock(ptep, ptl);
 out_unlock:
-    mmap_read_unlock(mm);
+    up_read(&mm->mmap_sem);
     return ret;
 #else
     return false;
