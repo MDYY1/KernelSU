@@ -41,11 +41,11 @@ static const struct ksu_feature_handler kernel_umount_handler = {
     .set_handler = kernel_umount_feature_set,
 };
 
-extern int path_umount(struct path *path, int flags);
+extern int do_umount(struct path *path, int flags);
 
 static void ksu_umount_mnt(struct path *path, int flags)
 {
-    int err = path_umount(path, flags);
+    int err = do_umount(path, flags);
     if (err) {
         pr_info("umount %s failed: %d\n", path->dentry->d_iname, err);
     }
