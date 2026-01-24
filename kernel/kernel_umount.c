@@ -41,8 +41,6 @@ static const struct ksu_feature_handler kernel_umount_handler = {
     .set_handler = kernel_umount_feature_set,
 };
 
-extern int do_umount(struct path *path, int flags);
-
 static void ksu_umount_mnt(struct path *path, int flags)
 {
     int err = do_umount(path, flags);
