@@ -133,12 +133,9 @@ static void ksu_mnt_ns_individual(void)
     // make root mount private
     struct path root_path;
     get_fs_root(current->fs, &root_path);
-// 原始错误代码：
-// int pm_ret = do_mount(NULL, &root_path, NULL, MS_PRIVATE | MS_REC, NULL);
 
-// 正确的方式：需要将 path 转换为目录名
-char *root_dir_name = root_path.dentry->d_name.name;
-int pm_ret = do_mount(NULL, root_dir_name, NULL, MS_PRIVATE | MS_REC, NULL);
+const unsigned char *root_dir_name = root_path.dentry->d_name.name;
+int pm_ret = do_mount(NULL, (const char __user *)root_dir_name, NULL, MS_PRIVATE | MS_REC, NULL);
     path_put(&root_path);
 
     if (pm_ret < 0) {
