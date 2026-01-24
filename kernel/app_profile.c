@@ -60,34 +60,9 @@ void setup_groups(struct root_profile *profile, struct cred *cred)
     put_group_info(group_info);
 }
 
-void put_seccomp_filter(struct task_struct *tsk);
-
 static void disable_seccomp(void)
 {
-#ifdef CONFIG_SECCOMP
-    struct task_struct *task = current;
-    
-    if (!task->sighand) {
-        pr_warn("KernelSU: task has no sighand\n");
-        return;
-    }
-    
-    spin_lock_irq(&task->sighand->siglock);
-    
-    // 清除 TIF_SECCOMP 线程标志
-    clear_thread_flag(TIF_SECCOMP);
-    
-    // 处理 seccomp filter
-        task->seccomp.filter = NULL;
-    
-    // 设置 seccomp 模式为禁用
-    task->seccomp.mode = SECCOMP_MODE_DISABLED;
-    
-    spin_unlock_irq(&task->sighand->siglock);
-    
-    pr_debug("KernelSU: disabled seccomp for task %d (%s)\n", 
-             task_pid_nr(task), task->comm);
-#endif
+
 }
 
 void escape_with_root_profile(void)
