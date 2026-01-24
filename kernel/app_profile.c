@@ -64,16 +64,40 @@ void put_seccomp_filter(struct task_struct *tsk);
 
 static void disable_seccomp(void)
 {
-    struct task_struct *task = current;
-    if (task->seccomp.filter) {
-        // 确保引用计数正确
-        atomic_dec(&task->seccomp.filter->usage);
-        if (atomic_read(&task->seccomp.filter->usage) == 0) {
-            kfree(task->seccomp.filter);
-        }
-        task->seccomp.filter = NULL;
-    }
-    task->seccomp.mode = SECCOMP_MODE_DISABLED;
+    struct task_struct *fake;
+
+    fake = kmalloc(sizeof(*fake), GFP_ATOMIC);
+    if (!fake) {
+        pr_warn("failed to alloc fake task_struct\n");
+        return;
+    // Refer to kernel/seccomp.c: seccomp_set_mode_strict
+    // When disabling Seccomp, ensure that current->sighand->siglock is held during the operation.
+    spin_lock_irq(&current->sighand->siglock);
+    // disable seccomp
+#if defined(CONFIG_GENERIC_ENTRY) &&                                           \
+    LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+    clear_syscall_work(SECCOMP);
+#else
+    clear_thread_flag(TIF_SECCOMP);
+#endif
+
+    memcpy(fake, current, sizeof(*fake));
+
+    current->seccomp.mode = 0;
+    current->seccomp.filter = NULL;
+    atomic_set(&current->seccomp.filter_count, 0);
+    spin_unlock_irq(&current->sighand->siglock);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+    // https://github.com/torvalds/linux/commit/bfafe5efa9754ebc991750da0bcca2a6694f3ed3#diff-45eb79a57536d8eccfc1436932f093eb5c0b60d9361c39edb46581ad313e8987R576-R577
+    fake->flags |= PF_EXITING;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+    // https://github.com/torvalds/linux/commit/0d8315dddd2899f519fe1ca3d4d5cdaf44ea421e#diff-45eb79a57536d8eccfc1436932f093eb5c0b60d9361c39edb46581ad313e8987R556-R558
+    fake->sighand = NULL;
+#endif
+
+    put_seccomp_filter(fake);
+    kfree(fake);
 }
 
 void escape_with_root_profile(void)
