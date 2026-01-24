@@ -60,7 +60,7 @@ void setup_groups(struct root_profile *profile, struct cred *cred)
     put_group_info(group_info);
 }
 
-void seccomp_filter_release(struct task_struct *tsk);
+void put_seccomp_filter(struct task_struct *tsk);
 
 static void disable_seccomp(void)
 {
@@ -98,7 +98,7 @@ static void disable_seccomp(void)
     fake->sighand = NULL;
 #endif
 
-    seccomp_filter_release(fake);
+    put_seccomp_filter(fake);
     kfree(fake);
 }
 
