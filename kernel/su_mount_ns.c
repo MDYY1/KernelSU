@@ -22,19 +22,8 @@
 
 static long ksu_sys_setns(int fd, int flags)
 {
-    struct pt_regs regs;
-    memset(&regs, 0, sizeof(regs));
 
-    PT_REGS_PARM1(&regs) = fd;
-    PT_REGS_PARM2(&regs) = flags;
-
-#if defined(__aarch64__)
-    return sys_setns(&regs);
-#elif defined(__x86_64__)
-    return __x64_sys_setns(&regs);
-#else
-#error "Unsupported arch"
-#endif
+    return sys_setns(fd, flags);
 }
 
 // global mode , need CAP_SYS_ADMIN and CAP_SYS_CHROOT to perform setns
