@@ -64,33 +64,40 @@ void put_seccomp_filter(struct task_struct *tsk);
 
 static void disable_seccomp(void)
 {
-    struct task_struct *fake;
-
-    fake = kmalloc(sizeof(*fake), GFP_ATOMIC);
-    if (!fake) {
-        pr_warn("failed to alloc fake task_struct\n");
+#ifdef CONFIG_SECCOMP
+    struct task_struct *task = current;
+    
+    if (!task->sighand) {
+        pr_warn("KernelSU: task has no sighand\n");
         return;
-    // Refer to kernel/seccomp.c: seccomp_set_mode_strict
-    // When disabling Seccomp, ensure that current->sighand->siglock is held during the operation.
-    spin_lock_irq(&current->sighand->siglock);
-    // disable seccomp
-#if defined(CONFIG_GENERIC_ENTRY) &&                                           \
-    LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-    clear_syscall_work(SECCOMP);
-#else
+    }
+    
+    spin_lock_irq(&task->sighand->siglock);
+    
+    // 清除 TIF_SECCOMP 线程标志
     clear_thread_flag(TIF_SECCOMP);
+    
+    // 处理 seccomp filter
+    if (task->seccomp.filter) {
+        // 对于 4.14 内核，我们需要手动管理引用计数
+        struct seccomp_filter *filter = task->seccomp.filter;
+        
+        // 检查并减少引用计数
+        if (atomic_read(&filter->usage) > 0) {
+            atomic_dec(&filter->usage);
+        }
+        
+        task->seccomp.filter = NULL;
+    }
+    
+    // 设置 seccomp 模式为禁用
+    task->seccomp.mode = SECCOMP_MODE_DISABLED;
+    
+    spin_unlock_irq(&task->sighand->siglock);
+    
+    pr_debug("KernelSU: disabled seccomp for task %d (%s)\n", 
+             task_pid_nr(task), task->comm);
 #endif
-
-    memcpy(fake, current, sizeof(*fake));
-
-    current->seccomp.mode = 0;
-    current->seccomp.filter = NULL;
-    //atomic_set(&current->seccomp.filter_count, 0);
-    spin_unlock_irq(&current->sighand->siglock);
-
-    put_seccomp_filter(fake);
-    kfree(fake);
-  }
 }
 
 void escape_with_root_profile(void)
