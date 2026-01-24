@@ -68,16 +68,13 @@ void escape_with_root_profile(void)
 {
     	struct cred *cred;
 
-	rcu_read_lock();
-
 	do {
 		cred = (struct cred *)__task_cred((current));
 		BUG_ON(!cred);
-	} while (!get_cred_rcu(cred));
+	} while (!get_cred(cred));
 
 	if (cred->euid.val == 0) {
 		pr_warn("Already root, don't escape!\n");
-		rcu_read_unlock();
 		return;
 	}
 	struct root_profile *profile = ksu_get_root_profile(cred->uid.val);
@@ -109,8 +106,6 @@ void escape_with_root_profile(void)
 	       sizeof(cred->cap_bset));
 
 	setup_groups(profile, cred);
-
-	rcu_read_unlock();
 
 	// Refer to kernel/seccomp.c: seccomp_set_mode_strict
 	// When disabling Seccomp, ensure that current->sighand->siglock is held during the operation.
