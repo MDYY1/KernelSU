@@ -7,12 +7,4 @@
 #include "klog.h" // IWYU pragma: keep
 #include "seccomp_cache.h"
 
-void ksu_seccomp_clear_cache(struct seccomp_filter *filter, int nr)
-{
 
-}
-
-void ksu_seccomp_allow_cache(struct seccomp_filter *filter, int nr)
-{
-
-}
