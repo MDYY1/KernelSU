@@ -78,17 +78,7 @@ static void disable_seccomp(void)
     clear_thread_flag(TIF_SECCOMP);
     
     // 处理 seccomp filter
-    if (task->seccomp.filter) {
-        // 对于 4.14 内核，我们需要手动管理引用计数
-        struct seccomp_filter *filter = task->seccomp.filter;
-        
-        // 检查并减少引用计数
-        if (atomic_read(&filter->usage) > 0) {
-            atomic_dec(&filter->usage);
-        }
-        
         task->seccomp.filter = NULL;
-    }
     
     // 设置 seccomp 模式为禁用
     task->seccomp.mode = SECCOMP_MODE_DISABLED;
