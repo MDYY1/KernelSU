@@ -9,6 +9,7 @@
 #include <linux/path.h>
 #include <linux/printk.h>
 #include <linux/types.h>
+#include <linux/syscalls.h>
 
 #include "kernel_umount.h"
 #include "klog.h" // IWYU pragma: keep
@@ -43,7 +44,7 @@ static const struct ksu_feature_handler kernel_umount_handler = {
 
 static void ksu_umount_mnt(struct path *path, int flags)
 {
-    int err = do_umount(path, flags);
+    int err = sys_umount((char __user *)path->dentry->d_name.name, flags);
     if (err) {
         pr_info("umount %s failed: %d\n", path->dentry->d_iname, err);
     }
