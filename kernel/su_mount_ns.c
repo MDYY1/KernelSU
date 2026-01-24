@@ -20,12 +20,12 @@
 #include "ksu.h"
 #include "su_mount_ns.h"
 
-extern int path_mount(const char *dev_name, struct path *path,
+extern int do_mount(const char *dev_name, struct path *path,
                       const char *type_page, unsigned long flags,
                       void *data_page);
 
 #if defined(__aarch64__)
-extern long __arm64_sys_setns(const struct pt_regs *regs);
+extern long sys_setns(const struct pt_regs *regs);
 #elif defined(__x86_64__)
 extern long __x64_sys_setns(const struct pt_regs *regs);
 #endif
@@ -39,7 +39,7 @@ static long ksu_sys_setns(int fd, int flags)
     PT_REGS_PARM2(&regs) = flags;
 
 #if defined(__aarch64__)
-    return __arm64_sys_setns(&regs);
+    return sys_setns(&regs);
 #elif defined(__x86_64__)
     return __x64_sys_setns(&regs);
 #else
@@ -154,7 +154,7 @@ static void ksu_mnt_ns_individual(void)
     // make root mount private
     struct path root_path;
     get_fs_root(current->fs, &root_path);
-    int pm_ret = path_mount(NULL, &root_path, NULL, MS_PRIVATE | MS_REC, NULL);
+    int pm_ret = do_mount(NULL, &root_path, NULL, MS_PRIVATE | MS_REC, NULL);
     path_put(&root_path);
 
     if (pm_ret < 0) {
